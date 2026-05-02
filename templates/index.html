@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Traffic Detection</title>
+
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: white;
+}
+
+/* 🔥 MAIN CARD */
+.container {
+    width: 95%;
+    max-width: 1000px;
+    margin: 60px auto;
+    background: #1e293b;
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+
+    box-shadow: 0 0 20px rgba(96,165,250,0.3),
+                0 0 40px rgba(96,165,250,0.2);
+}
+
+/* Title */
+h1 {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: #60a5fa;
+}
+
+/* 🔥 BUTTON ROW (STRICT ALIGNMENT) */
+.button-row {
+    display: flex;
+    justify-content: center;   /* 🔥 fix alignment */
+    gap: 15px;
+    flex-wrap: nowrap;         /* 🔥 prevent uneven layout */
+}
+
+/* 🔥 BUTTON BASE (PERFECT MATCH) */
+.btn {
+    flex: 1;
+    min-width: 160px;          /* 🔥 ensures equal width */
+    padding: 16px 20px;
+
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+
+    font-size: 16px;
+    font-weight: 600;
+
+    display: flex;             /* 🔥 fix text alignment */
+    align-items: center;
+    justify-content: center;
+
+    transition: 0.3s;
+}
+
+/* 🔥 BUTTON COLORS */
+.btn-upload {
+    background: #475569;
+    box-shadow: 0 0 10px #64748b;
+}
+
+.btn-camera {
+    background: #6366f1;
+    box-shadow: 0 0 10px #6366f1;
+}
+
+.btn-predict {
+    background: #22c55e;
+    box-shadow: 0 0 10px #22c55e;
+}
+
+.btn-stop {
+    background: #ef4444;
+    box-shadow: 0 0 10px #ef4444;
+}
+
+.btn-voice {
+    background: #facc15;
+    color: black;
+    box-shadow: 0 0 10px #facc15;
+}
+
+/* 🔥 HOVER */
+.btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255,255,255,0.4);
+}
+
+/* Hide file input */
+input[type="file"] {
+    display: none;
+}
+
+/* Images */
+#video-feed,
+#predicted-image {
+    display: block;
+    margin: 25px auto;
+    max-width: 600px;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    border: 3px solid #60a5fa;
+
+    box-shadow: 0 0 15px rgba(96,165,250,0.4);
+}
+
+/* 🔥 RESULT (HIDDEN INITIALLY) */
+.result {
+    margin-top: 30px;
+    padding: 20px;
+    background: #0f172a;
+    border-radius: 12px;
+    display: none;   /* 🔥 IMPORTANT FIX */
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #22c55e;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    opacity: 0;
+    transition: 0.5s;
+    z-index: 1000;
+}
+
+.toast.show {
+    opacity: 1;
+}
+
+/* Upload button fix */
+label.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+</style>
+</head>
+
+<body>
+<div id="toast" class="toast"> Image uploaded successfully</div>
+<div class="container">
+
+    <h1>Traffic Signs and Lights  Detection System </h1>
+
+    <!-- Buttons Row -->
+    <div class="button-row">
+
+        <!-- Upload -->
+        <label class="btn btn-upload">
+            Upload Image
+            <input type="file" id="image-input" accept="image/*">
+        </label>
+
+        <!-- Camera -->
+        <button id="start-camera" class="btn btn-camera">Start Camera</button>
+        <button id="stop-camera" class="btn btn-stop" style="display:none;">Stop</button>
+
+        <!-- Predict -->
+        <button id="upload-btn" class="btn btn-predict">Predict</button>
+
+        <!-- Voice -->
+        <button id="voice-toggle" class="btn btn-voice">Voice ON</button>
+
+    </div>
+
+    <!-- Camera Feed -->
+    <div style="display:flex; justify-content:center;">
+    <img id="video-feed" style="display:none;">
+</div>
+    <!-- Result -->
+    <div id="prediction-result" class="result" style="display:none;">
+        <h3>Result</h3>
+        <div style="display:flex; justify-content:center;">
+    <img id="predicted-image">
+</div>
+        <p id="prediction-text"></p>
+    </div>
+
+</div>
+
+<script>
+
+let voiceEnabled = true;
+
+// Voice toggle
+document.getElementById("voice-toggle").onclick = function () {
+    voiceEnabled = !voiceEnabled;
+    this.innerText = voiceEnabled ? "Voice ON" : "Voice OFF";
+};
+
+// Camera Start
+document.getElementById("start-camera").onclick = function () {
+    document.getElementById("video-feed").src = "/video_feed";
+    document.getElementById("video-feed").style.display = "block";
+    this.style.display = "none";
+    document.getElementById("stop-camera").style.display = "inline-block";
+};
+
+// Camera Stop
+document.getElementById("stop-camera").onclick = function () {
+    document.getElementById("video-feed").src = "";
+    document.getElementById("video-feed").style.display = "none";
+    this.style.display = "none";
+    document.getElementById("start-camera").style.display = "inline-block";
+};
+
+// Predict Button
+document.getElementById("upload-btn").onclick = function () {
+
+    let file = document.getElementById("image-input").files[0];
+
+    if (!file) {
+        alert("Select image first");
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append("file", file);
+
+    fetch("/upload", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+.then(data => {
+
+    // ❌ Handle backend error
+    if (data.error) {
+        showToast("❌ Upload failed: " + data.error);
+        return;
+    }
+
+    // ✅ Show result section
+    document.getElementById("prediction-result").style.display = "block";
+
+    // ✅ Update image + text
+    document.getElementById("predicted-image").src = "/uploads/" + data.image;
+    document.getElementById("prediction-text").innerText = data.result;
+
+
+})
+.catch(err => {
+    console.error("Error:", err);
+    showToast("⚠️ Server error, try again");
+});
+};
+function showToast(message) {
+    const toast = document.getElementById("toast");
+    toast.innerText = message;
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 5000); // 5 seconds
+}
+document.getElementById("image-input").addEventListener("change", function () {
+    let file = this.files[0];
+
+    if (file) {
+        showToast("📁 Image selected successfully");
+    }
+});
+</script>
+
+</body>
+</html>
